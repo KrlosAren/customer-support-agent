@@ -4,12 +4,16 @@ from app.agents.base.agent import Assistant
 from app.agents.flights.tools import create_flight_booking_tools
 from app.agents.hotels.tools import create_hotel_booking_tools
 from app.agents.cars.tools import create_cars_booking_tools
+from app.agents.base.tools import create_lookup_policy_tool
 from app.agents.activities.tools import create_activities_tools
 from app.agents.supervisor.graph import supervisor_graph
+from app.agents.supervisor.state import TravelerAgentState
 from app.config.settings import Settings
 from app.config.settings import get_settings
 from app.services.vectorstore.vector_store import VectorStoreRetriever
 from app.utils.logger import get_logger
+
+from langgraph.graph import StateGraph
 
 from app.agents.base.prompts import primary_assistant_prompt
 from langchain_openai.chat_models import ChatOpenAI
@@ -83,28 +87,34 @@ class Bootstrap:
 
         docs = [{"page_content": txt} for txt in re.split(r"(?=\n##)", faq_text)]
 
-        ## open ai
         oai_client = openai.OpenAI()
 
         retriever = VectorStoreRetriever.from_docs(docs=docs, oai_client=oai_client)
 
-        ## db
-
         llm = ChatOpenAI(model=settings.llm_model)
+        logger.info(f"Initialized LLM: {settings.llm_model}")
+
         tools = []
+        policies_tools = create_lookup_policy_tool(retriever=retriever)
         flight_tools = create_flight_booking_tools(db_path=settings.db_path)
         hotel_tools = create_hotel_booking_tools(db_path=settings.db_path)
         car_tools = create_cars_booking_tools(db_path=settings.db_path)
         activities_tools = create_activities_tools(db_path=settings.db_path)
 
-        tools += flight_tools + hotel_tools + car_tools + activities_tools
+        tools += (
+            policies_tools + flight_tools + hotel_tools + car_tools + activities_tools
+        )
         logger.info(f"Initialized {len(tools)} tools")
 
         runnable_with_tools = primary_assistant_prompt | llm.bind_tools(tools=tools)
-        graph = supervisor_graph(
-            tools=tools, assistant=Assistant(runnable=runnable_with_tools)
+        logger.info("Initialized runnable with tools")
+
+        builder = StateGraph(TravelerAgentState)
+        agent = supervisor_graph(
+            builder=builder,
+            tools=tools,
+            assistant=Assistant(runnable=runnable_with_tools),
         )
-        agent = graph
 
         templates = Jinja2Templates(directory="app/templates")
 

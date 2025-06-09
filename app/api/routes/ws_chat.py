@@ -34,6 +34,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 {"input": data},
                 config=config,
             )
+            logger.info(f"Agent result: {result}")
 
             if not result:
                 logger.error("No response from agent")
