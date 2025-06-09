@@ -5,7 +5,6 @@ import sqlite3
 from datetime import date, datetime
 from typing import Callable, Optional
 
-from langchain_core.tools import Tool
 
 import pytz
 from langchain_core.runnables import RunnableConfig

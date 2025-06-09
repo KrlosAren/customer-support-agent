@@ -4,8 +4,6 @@ from datetime import datetime, date
 
 from langchain.tools import tool
 
-from langchain_core.tools import Tool
-
 
 def create_hotel_booking_tools(db_path: str) -> list[Callable]:
     @tool

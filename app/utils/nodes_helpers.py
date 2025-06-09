@@ -1,4 +1,3 @@
-from typing import List, Optional
 from langchain_core.messages import ToolMessage
 from langchain_core.runnables import RunnableLambda
 
