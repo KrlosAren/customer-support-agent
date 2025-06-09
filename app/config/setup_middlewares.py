@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+
 def setup_middlewares(app: FastAPI) -> FastAPI:
     """
     Setup middleware for the FastAPI application.
@@ -15,6 +16,5 @@ def setup_middlewares(app: FastAPI) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
-    return app
 
+    return app

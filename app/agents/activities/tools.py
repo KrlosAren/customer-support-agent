@@ -1,13 +1,11 @@
-from typing import Optional, List
+from typing import Callable, Optional
 
 from langchain_core.tools import tool
 
 import sqlite3
 
-from langchain_core.tools import Tool
 
-
-def create_activities_tools(db_path: str) -> list[Tool]:
+def create_activities_tools(db_path: str) -> list[Callable]:
     """Create a tool to manage trip recommendations."""
 
     @tool

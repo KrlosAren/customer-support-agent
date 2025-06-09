@@ -7,6 +7,7 @@ from app.utils.logger import get_logger
 
 logger = get_logger(name=__name__)
 
+
 class Assistant:
     def __init__(self, runnable: Runnable):
         self.runnable = runnable
@@ -19,7 +20,7 @@ class Assistant:
             if not passenger_id:
                 raise ValueError("Passenger ID is required")
             logger.info(f"Using passenger ID: {passenger_id}")
-            
+
             state = {**state, "user_info": passenger_id}
             result = self.runnable.invoke(state)
             # If the LLM happens to return an empty response, we will re-prompt it

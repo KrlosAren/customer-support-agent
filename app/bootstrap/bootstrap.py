@@ -25,7 +25,12 @@ logger = get_logger(name=__name__)
 class AppComponents:
     """Contenedor para componentes de la aplicación."""
 
-    def __init__(self, retriever: VectorStoreRetriever, agent: RunnableSerializable, templates: Jinja2Templates):
+    def __init__(
+        self,
+        retriever: VectorStoreRetriever,
+        agent: RunnableSerializable,
+        templates: Jinja2Templates,
+    ):
         """
         Inicializa los componentes con las dependencias inyectadas.
         """
@@ -100,10 +105,12 @@ class Bootstrap:
             tools=tools, assistant=Assistant(runnable=runnable_with_tools)
         )
         agent = graph
-        
-        templates= Jinja2Templates(directory="app/templates")
 
-        components = AppComponents(retriever=retriever, agent=agent, templates=templates)
+        templates = Jinja2Templates(directory="app/templates")
+
+        components = AppComponents(
+            retriever=retriever, agent=agent, templates=templates
+        )
 
         cls._components = components
         logger.info("Components initialized successfully")

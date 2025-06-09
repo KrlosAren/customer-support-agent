@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Callable, Optional, Union
 import sqlite3
 from datetime import datetime, date
 
@@ -7,8 +7,7 @@ from langchain.tools import tool
 from langchain_core.tools import Tool
 
 
-def create_hotel_booking_tools(db_path: str) -> list[Tool]:
-
+def create_hotel_booking_tools(db_path: str) -> list[Callable]:
     @tool
     def search_hotels(
         location: Optional[str] = None,

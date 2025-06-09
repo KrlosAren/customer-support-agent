@@ -45,8 +45,8 @@ def create_application() -> FastAPI:
 
     logger.info("Setting up routers")
     setup_routers(app=app)
-    
-    logger.info("Setting up static files")    
+
+    logger.info("Setting up static files")
     setup_static(app=app)
 
     logger.info("FastAPI application created successfully")

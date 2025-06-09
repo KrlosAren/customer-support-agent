@@ -3,7 +3,7 @@ from langchain_core.tools import tool
 
 import sqlite3
 from datetime import date, datetime
-from typing import Optional
+from typing import Callable, Optional
 
 from langchain_core.tools import Tool
 
@@ -15,8 +15,7 @@ from app.utils.logger import get_logger
 logger = get_logger(name=__name__)
 
 
-def create_flight_booking_tools(db_path: str) -> list[Tool]:
-
+def create_flight_booking_tools(db_path: str) -> list[Callable]:
     @tool
     def fetch_user_flight_information(config: RunnableConfig) -> list[dict]:
         """Fetch all tickets for the user along with corresponding flight information and seat assignments.
@@ -126,7 +125,7 @@ def create_flight_booking_tools(db_path: str) -> list[Tool]:
             )
             time_until = (departure_time - current_time).total_seconds()
             if time_until < (3 * 3600):
-                return f"Not permitted to reschedule to a flight that is less than 3 hours from the current time. Selected flight is at {departure_time}."
+                return f"No se permite re agendar el vuelo con menos de 3 horas de la salida. El vuelo seleccionado sale a las {departure_time}."
 
             cursor.execute(
                 "SELECT flight_id FROM ticket_flights WHERE ticket_no = ?", (ticket_no,)
@@ -135,7 +134,7 @@ def create_flight_booking_tools(db_path: str) -> list[Tool]:
             if not current_flight:
                 cursor.close()
                 conn.close()
-                return "No existing ticket found for the given ticket number."
+                return "No existen tickets para el número de ticket proporcionado."
 
             # Check the signed-in user actually has this ticket
             cursor.execute(
@@ -146,7 +145,7 @@ def create_flight_booking_tools(db_path: str) -> list[Tool]:
             if not current_ticket:
                 cursor.close()
                 conn.close()
-                return f"Current signed-in passenger with ID {passenger_id} not the owner of ticket {ticket_no}"
+                return f"El pasajero con ID {passenger_id} no es el dueño del ticket {ticket_no}"
 
             # In a real application, you'd likely add additional checks here to enforce business logic,
             # like "does the new departure airport match the current ticket", etc.
@@ -161,7 +160,7 @@ def create_flight_booking_tools(db_path: str) -> list[Tool]:
 
             cursor.close()
             conn.close()
-        return "Ticket successfully updated to new flight."
+        return "Ticket actualizado exitosamente al nuevo vuelo."
 
     @tool
     def cancel_ticket(ticket_no: str, *, config: RunnableConfig) -> str:
@@ -180,7 +179,7 @@ def create_flight_booking_tools(db_path: str) -> list[Tool]:
             if not existing_ticket:
                 cursor.close()
                 conn.close()
-                return "No existing ticket found for the given ticket number."
+                return "No existen tickets para el número de ticket proporcionado."
 
             # Check the signed-in user actually has this ticket
             cursor.execute(
@@ -191,7 +190,7 @@ def create_flight_booking_tools(db_path: str) -> list[Tool]:
             if not current_ticket:
                 cursor.close()
                 conn.close()
-                return f"Current signed-in passenger with ID {passenger_id} not the owner of ticket {ticket_no}"
+                return f"El pasajero con ID {passenger_id} no es dueno del ticket numero {ticket_no}"
 
             cursor.execute(
                 "DELETE FROM ticket_flights WHERE ticket_no = ?", (ticket_no,)
