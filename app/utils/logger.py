@@ -1,9 +1,9 @@
 # logger.py
-import logging
+from logging import Logger, getLogger, StreamHandler, Formatter, INFO
 import sys
 
 
-def get_logger(name: str = "myapp", level: int = logging.INFO) -> logging.Logger:
+def get_logger(name: str, level: int = INFO) -> Logger:
     """
     Configura y devuelve un logger con formato enriquecido.
 
@@ -14,13 +14,13 @@ def get_logger(name: str = "myapp", level: int = logging.INFO) -> logging.Logger
     Returns:
         logging.Logger: Logger configurado.
     """
-    logger = logging.getLogger(name)
+    logger = getLogger(name)
     logger.setLevel(level)
 
     # Evitar múltiples handlers si ya fue configurado
     if not logger.handlers:
-        handler = logging.StreamHandler(sys.stdout)
-        formatter = logging.Formatter(
+        handler = StreamHandler(sys.stdout)
+        formatter = Formatter(
             fmt="%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d - %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
@@ -28,4 +28,3 @@ def get_logger(name: str = "myapp", level: int = logging.INFO) -> logging.Logger
         logger.addHandler(handler)
 
     return logger
-  

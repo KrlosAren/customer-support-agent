@@ -12,9 +12,12 @@ class Settings(BaseSettings):
     debug: bool = True
     faq_url: str
     openai_api_key: str
+    db_path: str
+    llm_model: str
 
     model_config = SettingsConfigDict(
-        env_file=".env.development", env_file_encoding="utf-8"
+        env_file=f'.env.{"development" if os.getenv("ENVIRONMENT") is None else os.getenv("ENVIRONMENT")}',
+        env_file_encoding="utf-8",
     )
 
 

@@ -1,10 +1,12 @@
 from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
 
+from app.api.middleware.setup_middlewares import setup_middlewares
+from app.api.routes.setup_routers import setup_routers
 from app.bootstrap.bootstrap import get_bootstrap
 from app.config.settings import get_settings
 
-from app.utils.logging import get_logger
+from app.utils.logger import get_logger
 
 logger = get_logger(name=__name__)
 
@@ -12,9 +14,10 @@ logger = get_logger(name=__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for the FastAPI app."""
-
+    logger.info("Starting lifespan context manager")
     bootstrap = get_bootstrap(settings=get_settings())
     app.state.bootstrap = bootstrap
+    logger.info("Bootstrap initialized and set in app state")
 
     # Ceder el control a FastAPI
     yield
@@ -36,18 +39,22 @@ def create_application() -> FastAPI:
     )
 
     # Configurar middlewares
-    # setup_middlewares(app)
+    setup_middlewares(app=app)
 
     # Crear función para la dependencia de la base de datos
 
     # Importar y configurar routers
     # from app.router.router import setup_routers
 
-    # setup_routers(app)
+    setup_routers(app=app)
 
     logger.info("FastAPI application created successfully")
     return app
 
 
-# Crear la instancia de la aplicación
-app = create_application()
+try:
+    # Crear la instancia de la aplicación
+    app = create_application()
+except Exception as err:
+    logger.error(f"Error creating FastAPI application: {err}")
+    raise err
