@@ -198,3 +198,4 @@ cython_debug/
 .*.env
 
 *.sqlite
+*.backup.sqlite
