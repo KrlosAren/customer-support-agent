@@ -4,14 +4,13 @@ from datetime import datetime, date
 
 from langchain.tools import tool
 
+from langchain_core.tools import Tool
 
-class HotelsTools:
-    def __init__(self, db: str):
-        self.db = db
+
+def create_hotel_booking_tools(db_path: str) -> list[Tool]:
 
     @tool
     def search_hotels(
-        self,
         location: Optional[str] = None,
         name: Optional[str] = None,
         price_tier: Optional[str] = None,
@@ -31,7 +30,7 @@ class HotelsTools:
         Returns:
             list[dict]: A list of hotel dictionaries matching the search criteria.
         """
-        conn = sqlite3.connect(self.db)
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
         query = "SELECT * FROM hotels WHERE 1=1"
@@ -55,7 +54,7 @@ class HotelsTools:
         ]
 
     @tool
-    def book_hotel(self, hotel_id: int) -> str:
+    def book_hotel(hotel_id: int) -> str:
         """
         Book a hotel by its ID.
 
@@ -65,7 +64,7 @@ class HotelsTools:
         Returns:
             str: A message indicating whether the hotel was successfully booked or not.
         """
-        conn = sqlite3.connect(self.db)
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
         cursor.execute("UPDATE hotels SET booked = 1 WHERE id = ?", (hotel_id,))
@@ -80,7 +79,6 @@ class HotelsTools:
 
     @tool
     def update_hotel(
-        self,
         hotel_id: int,
         checkin_date: Optional[Union[datetime, date]] = None,
         checkout_date: Optional[Union[datetime, date]] = None,
@@ -96,7 +94,7 @@ class HotelsTools:
         Returns:
             str: A message indicating whether the hotel was successfully updated or not.
         """
-        conn = sqlite3.connect(self.db)
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
         if checkin_date:
@@ -120,7 +118,7 @@ class HotelsTools:
             return f"No hotel found with ID {hotel_id}."
 
     @tool
-    def cancel_hotel(self, hotel_id: int) -> str:
+    def cancel_hotel(hotel_id: int) -> str:
         """
         Cancel a hotel by its ID.
 
@@ -130,7 +128,7 @@ class HotelsTools:
         Returns:
             str: A message indicating whether the hotel was successfully cancelled or not.
         """
-        conn = sqlite3.connect(self.db)
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
         cursor.execute("UPDATE hotels SET booked = 0 WHERE id = ?", (hotel_id,))
@@ -142,3 +140,10 @@ class HotelsTools:
         else:
             conn.close()
             return f"No hotel found with ID {hotel_id}."
+
+    return [
+        search_hotels,
+        book_hotel,
+        update_hotel,
+        cancel_hotel,
+    ]

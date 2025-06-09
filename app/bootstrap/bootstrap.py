@@ -2,6 +2,9 @@ from typing import Optional
 
 from app.agents.base.agent import Assistant
 from app.agents.flights.tools import create_flight_booking_tools
+from app.agents.hotels.tools import create_hotel_booking_tools
+from app.agents.cars.tools import create_cars_booking_tools
+from app.agents.activities.tools import create_activities_tools
 from app.agents.supervisor.graph import supervisor_graph
 from app.config.settings import Settings
 from app.config.settings import get_settings
@@ -11,8 +14,10 @@ from app.utils.logger import get_logger
 from app.agents.base.prompts import primary_assistant_prompt
 from langchain_openai.chat_models import ChatOpenAI
 
-from langchain_core.tools import Tool
 from langchain_core.runnables import RunnableSerializable
+
+from fastapi.templating import Jinja2Templates
+
 
 logger = get_logger(name=__name__)
 
@@ -20,12 +25,13 @@ logger = get_logger(name=__name__)
 class AppComponents:
     """Contenedor para componentes de la aplicación."""
 
-    def __init__(self, retriever: VectorStoreRetriever, agent: RunnableSerializable):
+    def __init__(self, retriever: VectorStoreRetriever, agent: RunnableSerializable, templates: Jinja2Templates):
         """
         Inicializa los componentes con las dependencias inyectadas.
         """
         self.retriever = retriever
         self.agent = agent
+        self.templates = templates
 
 
 class Bootstrap:
@@ -78,22 +84,26 @@ class Bootstrap:
         retriever = VectorStoreRetriever.from_docs(docs=docs, oai_client=oai_client)
 
         ## db
-        from app.services.database.db_sqlite import DbSqlite
 
         llm = ChatOpenAI(model=settings.llm_model)
         tools = []
         flight_tools = create_flight_booking_tools(db_path=settings.db_path)
+        hotel_tools = create_hotel_booking_tools(db_path=settings.db_path)
+        car_tools = create_cars_booking_tools(db_path=settings.db_path)
+        activities_tools = create_activities_tools(db_path=settings.db_path)
 
-
-        tools += flight_tools
+        tools += flight_tools + hotel_tools + car_tools + activities_tools
+        logger.info(f"Initialized {len(tools)} tools")
 
         runnable_with_tools = primary_assistant_prompt | llm.bind_tools(tools=tools)
         graph = supervisor_graph(
             tools=tools, assistant=Assistant(runnable=runnable_with_tools)
         )
         agent = graph
+        
+        templates= Jinja2Templates(directory="app/templates")
 
-        components = AppComponents(retriever=retriever, agent=agent)
+        components = AppComponents(retriever=retriever, agent=agent, templates=templates)
 
         cls._components = components
         logger.info("Components initialized successfully")

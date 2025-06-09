@@ -1,11 +1,12 @@
 from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
 
-from app.api.middleware.setup_middlewares import setup_middlewares
-from app.api.routes.setup_routers import setup_routers
+from app.config.setup_middlewares import setup_middlewares
+from app.config.setup_routers import setup_routers
 from app.bootstrap.bootstrap import get_bootstrap
 from app.config.settings import get_settings
 
+from app.config.setup_static import setup_static
 from app.utils.logger import get_logger
 
 logger = get_logger(name=__name__)
@@ -39,14 +40,14 @@ def create_application() -> FastAPI:
     )
 
     # Configurar middlewares
+    logger.info("Setting up middlewares")
     setup_middlewares(app=app)
 
-    # Crear función para la dependencia de la base de datos
-
-    # Importar y configurar routers
-    # from app.router.router import setup_routers
-
+    logger.info("Setting up routers")
     setup_routers(app=app)
+    
+    logger.info("Setting up static files")    
+    setup_static(app=app)
 
     logger.info("FastAPI application created successfully")
     return app

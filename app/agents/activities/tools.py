@@ -4,17 +4,14 @@ from langchain_core.tools import tool
 
 import sqlite3
 
+from langchain_core.tools import Tool
 
-class ActivityTools:
+
+def create_activities_tools(db_path: str) -> list[Tool]:
     """Create a tool to manage trip recommendations."""
-
-    def __init__(self, db: str):
-        """Initialize the ActivityTools with a database connection."""
-        self.db = db
 
     @tool
     def search_trip_recommendations(
-        self,
         location: Optional[str] = None,
         name: Optional[str] = None,
         keywords: Optional[str] = None,
@@ -30,7 +27,7 @@ class ActivityTools:
         Returns:
             list[dict]: A list of trip recommendation dictionaries matching the search criteria.
         """
-        conn = sqlite3.connect(self.db)
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
         query = "SELECT * FROM trip_recommendations WHERE 1=1"
@@ -59,7 +56,7 @@ class ActivityTools:
         ]
 
     @tool
-    def book_excursion(self, recommendation_id: int) -> str:
+    def book_excursion(recommendation_id: int) -> str:
         """
         Book a excursion by its recommendation ID.
 
@@ -69,7 +66,7 @@ class ActivityTools:
         Returns:
             str: A message indicating whether the trip recommendation was successfully booked or not.
         """
-        conn = sqlite3.connect(self.db)
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
         cursor.execute(
@@ -86,7 +83,7 @@ class ActivityTools:
             return f"No trip recommendation found with ID {recommendation_id}."
 
     @tool
-    def update_excursion(self, recommendation_id: int, details: str) -> str:
+    def update_excursion(recommendation_id: int, details: str) -> str:
         """
         Update a trip recommendation's details by its ID.
 
@@ -97,7 +94,7 @@ class ActivityTools:
         Returns:
             str: A message indicating whether the trip recommendation was successfully updated or not.
         """
-        conn = sqlite3.connect(self.db)
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
         cursor.execute(
@@ -114,7 +111,7 @@ class ActivityTools:
             return f"No trip recommendation found with ID {recommendation_id}."
 
     @tool
-    def cancel_excursion(self, recommendation_id: int) -> str:
+    def cancel_excursion(recommendation_id: int) -> str:
         """
         Cancel a trip recommendation by its ID.
 
@@ -124,7 +121,7 @@ class ActivityTools:
         Returns:
             str: A message indicating whether the trip recommendation was successfully cancelled or not.
         """
-        conn = sqlite3.connect(self.db)
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
         cursor.execute(
@@ -139,3 +136,10 @@ class ActivityTools:
         else:
             conn.close()
             return f"No trip recommendation found with ID {recommendation_id}."
+
+    return [
+        search_trip_recommendations,
+        book_excursion,
+        update_excursion,
+        cancel_excursion,
+    ]

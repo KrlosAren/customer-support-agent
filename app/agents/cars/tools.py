@@ -5,17 +5,14 @@ import sqlite3
 
 from langchain_core.tools import tool
 
+from langchain_core.tools import Tool
 
-class CarRentalTools:
+
+def create_cars_booking_tools(db_path: str) -> list[Tool]:
     """Create a tool to manage car rentals."""
-
-    def __init__(self, db: str):
-        """Initialize the CarRentalTools with a database connection."""
-        self.db = db
 
     @tool
     def search_car_rentals(
-        self,
         location: Optional[str] = None,
         name: Optional[str] = None,
         price_tier: Optional[str] = None,
@@ -35,7 +32,7 @@ class CarRentalTools:
         Returns:
             list[dict]: A list of car rental dictionaries matching the search criteria.
         """
-        conn = sqlite3.connect(self.db)
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
         query = "SELECT * FROM car_rentals WHERE 1=1"
@@ -60,7 +57,7 @@ class CarRentalTools:
         ]
 
     @tool
-    def book_car_rental(self, rental_id: int) -> str:
+    def book_car_rental(rental_id: int) -> str:
         """
         Book a car rental by its ID.
 
@@ -70,7 +67,7 @@ class CarRentalTools:
         Returns:
             str: A message indicating whether the car rental was successfully booked or not.
         """
-        conn = sqlite3.connect(self.db)
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
         cursor.execute("UPDATE car_rentals SET booked = 1 WHERE id = ?", (rental_id,))
@@ -85,7 +82,6 @@ class CarRentalTools:
 
     @tool
     def update_car_rental(
-        self,
         rental_id: int,
         start_date: Optional[Union[datetime, date]] = None,
         end_date: Optional[Union[datetime, date]] = None,
@@ -101,7 +97,7 @@ class CarRentalTools:
         Returns:
             str: A message indicating whether the car rental was successfully updated or not.
         """
-        conn = sqlite3.connect(self, db)
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
         if start_date:
@@ -125,7 +121,7 @@ class CarRentalTools:
             return f"No car rental found with ID {rental_id}."
 
     @tool
-    def cancel_car_rental(self, rental_id: int) -> str:
+    def cancel_car_rental(rental_id: int) -> str:
         """
         Cancel a car rental by its ID.
 
@@ -135,7 +131,7 @@ class CarRentalTools:
         Returns:
             str: A message indicating whether the car rental was successfully cancelled or not.
         """
-        conn = sqlite3.connect(self.db)
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
         cursor.execute("UPDATE car_rentals SET booked = 0 WHERE id = ?", (rental_id,))
@@ -147,3 +143,10 @@ class CarRentalTools:
         else:
             conn.close()
             return f"No car rental found with ID {rental_id}."
+
+    return [
+        search_car_rentals,
+        book_car_rental,
+        update_car_rental,
+        cancel_car_rental,
+    ]

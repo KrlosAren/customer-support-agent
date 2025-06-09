@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Agent Chat</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 20px auto;
+      }
+      #chat {
+        border: 1px solid #ccc;
+        padding: 10px;
+        height: 400px;
+        overflow-y: scroll;
+      }
+      #inputArea {
+        display: flex;
+        margin-top: 10px;
+      }
+      #messageInput {
+        flex: 1;
+        padding: 10px;
+      }
+      #sendButton {
+        padding: 10px 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Chat con el Agente</h1>
+    <div id="chat"></div>
+    <div id="inputArea">
+      <input
+        type="text"
+        id="messageInput"
+        placeholder="Escribe un mensaje..."
+      />
+      <button id="sendButton">Enviar</button>
+    </div>
+
+    <script>
+      const chat = document.getElementById("chat");
+      const input = document.getElementById("messageInput");
+      const button = document.getElementById("sendButton");
+
+      const ws = new WebSocket(`ws://${window.location.host}/chat/ws`);
+      function appendMarkdown(message) {
+        const div = document.createElement("div");
+        div.innerHTML = marked.parse(message);
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
+      }
+
+      ws.onopen = () => {
+        appendMessage("🟢 Conectado al servidor.");
+      };
+
+      ws.onmessage = (event) => {
+        // appendMessage("🤖 Agente: " + event.data);
+        appendMarkdown("🤖 Agente:" + event.data);
+      };
+
+      ws.onclose = () => {
+        appendMessage("🔴 Conexión cerrada.");
+      };
+
+      button.addEventListener("click", () => {
+        const msg = input.value;
+        if (msg.trim() !== "") {
+          appendMessage("🧑 Tú: " + msg);
+          ws.send(msg);
+          input.value = "";
+        }
+      });
+
+      function appendMessage(message) {
+        const p = document.createElement("p");
+        p.textContent = message;
+        chat.appendChild(p);
+        chat.scrollTop = chat.scrollHeight;
+      }
+    </script>
+  </body>
+</html>
