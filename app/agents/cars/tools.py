@@ -1,9 +1,10 @@
 from datetime import date, datetime
 from typing import Callable, Optional, Union
-
 import sqlite3
-
 from langchain_core.tools import tool
+from app.utils.logger import get_logger
+
+logger = get_logger(name=__name__)
 
 
 def create_cars_booking_tools(db_path: str) -> list[Callable]:
@@ -30,29 +31,39 @@ def create_cars_booking_tools(db_path: str) -> list[Callable]:
         Returns:
             list[dict]: A list of car rental dictionaries matching the search criteria.
         """
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
+        try:
+            with sqlite3.connect(db_path) as conn:
+                cursor = conn.cursor()
 
-        query = "SELECT * FROM car_rentals WHERE 1=1"
-        params = []
+                query = "SELECT * FROM car_rentals WHERE 1=1"
+                params = []
 
-        if location:
-            query += " AND location LIKE ?"
-            params.append(f"%{location}%")
-        if name:
-            query += " AND name LIKE ?"
-            params.append(f"%{name}%")
-        # For our tutorial, we will let you match on any dates and price tier.
-        # (since our toy dataset doesn't have much data)
-        cursor.execute(query, params)
-        results = cursor.fetchall()
+                if location:
+                    query += " AND location LIKE ?"
+                    params.append(f"%{location}%")
+                if name:
+                    query += " AND name LIKE ?"
+                    params.append(f"%{name}%")
+                if price_tier:
+                    query += " AND price_tier LIKE ?"
+                    params.append(f"%{price_tier}%")
+                if start_date:
+                    query += " AND start_date >= ?"
+                    params.append(start_date)
+                if end_date:
+                    query += " AND end_date <= ?"
+                    params.append(end_date)
 
-        conn.close()
+                cursor.execute(query, params)
+                results = cursor.fetchall()
 
-        return [
-            dict(zip([column[0] for column in cursor.description], row))
-            for row in results
-        ]
+                return [
+                    dict(zip([column[0] for column in cursor.description], row))
+                    for row in results
+                ]
+        except sqlite3.Error as e:
+            logger.error(f"Database error in search_car_rentals: {e}")
+            return []
 
     @tool
     def book_car_rental(rental_id: int) -> str:
@@ -65,18 +76,22 @@ def create_cars_booking_tools(db_path: str) -> list[Callable]:
         Returns:
             str: A message indicating whether the car rental was successfully booked or not.
         """
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
+        try:
+            with sqlite3.connect(db_path) as conn:
+                cursor = conn.cursor()
 
-        cursor.execute("UPDATE car_rentals SET booked = 1 WHERE id = ?", (rental_id,))
-        conn.commit()
+                cursor.execute(
+                    "UPDATE car_rentals SET booked = 1 WHERE id = ?", (rental_id,)
+                )
+                conn.commit()
 
-        if cursor.rowcount > 0:
-            conn.close()
-            return f"Car rental {rental_id} successfully booked."
-        else:
-            conn.close()
-            return f"No car rental found with ID {rental_id}."
+                if cursor.rowcount > 0:
+                    return f"Car rental {rental_id} successfully booked."
+                else:
+                    return f"No car rental found with ID {rental_id}."
+        except sqlite3.Error as e:
+            logger.error(f"Database error in book_car_rental: {e}")
+            return f"Error booking car rental: {str(e)}"
 
     @tool
     def update_car_rental(
@@ -95,28 +110,36 @@ def create_cars_booking_tools(db_path: str) -> list[Callable]:
         Returns:
             str: A message indicating whether the car rental was successfully updated or not.
         """
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
+        if not start_date and not end_date:
+            return "At least one date (start_date or end_date) must be provided for update."
 
-        if start_date:
-            cursor.execute(
-                "UPDATE car_rentals SET start_date = ? WHERE id = ?",
-                (start_date, rental_id),
-            )
-        if end_date:
-            cursor.execute(
-                "UPDATE car_rentals SET end_date = ? WHERE id = ?",
-                (end_date, rental_id),
-            )
+        try:
+            with sqlite3.connect(db_path) as conn:
+                cursor = conn.cursor()
 
-        conn.commit()
+                updates = []
+                params = []
 
-        if cursor.rowcount > 0:
-            conn.close()
-            return f"Car rental {rental_id} successfully updated."
-        else:
-            conn.close()
-            return f"No car rental found with ID {rental_id}."
+                if start_date:
+                    updates.append("start_date = ?")
+                    params.append(start_date)
+                if end_date:
+                    updates.append("end_date = ?")
+                    params.append(end_date)
+
+                params.append(rental_id)
+
+                query = f"UPDATE car_rentals SET {', '.join(updates)} WHERE id = ?"
+                cursor.execute(query, params)
+                conn.commit()
+
+                if cursor.rowcount > 0:
+                    return f"Car rental {rental_id} successfully updated."
+                else:
+                    return f"No car rental found with ID {rental_id}."
+        except sqlite3.Error as e:
+            logger.error(f"Database error in update_car_rental: {e}")
+            return f"Error updating car rental: {str(e)}"
 
     @tool
     def cancel_car_rental(rental_id: int) -> str:
@@ -129,18 +152,22 @@ def create_cars_booking_tools(db_path: str) -> list[Callable]:
         Returns:
             str: A message indicating whether the car rental was successfully cancelled or not.
         """
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
+        try:
+            with sqlite3.connect(db_path) as conn:
+                cursor = conn.cursor()
 
-        cursor.execute("UPDATE car_rentals SET booked = 0 WHERE id = ?", (rental_id,))
-        conn.commit()
+                cursor.execute(
+                    "UPDATE car_rentals SET booked = 0 WHERE id = ?", (rental_id,)
+                )
+                conn.commit()
 
-        if cursor.rowcount > 0:
-            conn.close()
-            return f"Car rental {rental_id} successfully cancelled."
-        else:
-            conn.close()
-            return f"No car rental found with ID {rental_id}."
+                if cursor.rowcount > 0:
+                    return f"Car rental {rental_id} successfully cancelled."
+                else:
+                    return f"No car rental found with ID {rental_id}."
+        except sqlite3.Error as e:
+            logger.error(f"Database error in cancel_car_rental: {e}")
+            return f"Error cancelling car rental: {str(e)}"
 
     return [
         search_car_rentals,

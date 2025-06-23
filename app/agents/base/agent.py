@@ -1,4 +1,4 @@
-from langchain_core.runnables import Runnable, RunnableConfig
+from langchain_core.runnables import Runnable
 
 
 from app.agents.supervisor.state import TravelerAgentState
@@ -11,20 +11,11 @@ class Assistant:
     def __init__(self, runnable: Runnable):
         self.runnable = runnable
 
-    def __call__(self, state: TravelerAgentState, config: RunnableConfig):
+    def __call__(self, state: TravelerAgentState):
         while True:
-            logger.info("Assistant is running")
-            configuration = config.get("configurable", {})
-            passenger_id = configuration.get("passenger_id", None)
-            if not passenger_id:
-                raise ValueError("Passenger ID is required")
-            logger.info(f"Using passenger ID: {passenger_id}")
-
-            state = {**state, "user_info": passenger_id}
             result = self.runnable.invoke(state)
             # If the LLM happens to return an empty response, we will re-prompt it
             # for an actual response.
-            logger.info(f"Assistant result: {result}")
             if not result.tool_calls and (
                 not result.content
                 or isinstance(result.content, list)

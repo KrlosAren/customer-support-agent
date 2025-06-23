@@ -18,7 +18,6 @@ from langgraph.graph import StateGraph
 from app.agents.base.prompts import primary_assistant_prompt
 from langchain_openai.chat_models import ChatOpenAI
 
-from langchain_core.runnables import RunnableSerializable
 
 from fastapi.templating import Jinja2Templates
 
@@ -32,7 +31,7 @@ class AppComponents:
     def __init__(
         self,
         retriever: VectorStoreRetriever,
-        agent: RunnableSerializable,
+        agent: StateGraph,
         templates: Jinja2Templates,
     ):
         """
@@ -101,6 +100,11 @@ class Bootstrap:
         car_tools = create_cars_booking_tools(db_path=settings.db_path)
         activities_tools = create_activities_tools(db_path=settings.db_path)
 
+        logger.info("Initialized all tools")
+
+        def user_info(state: TravelerAgentState):
+            return {"user_info": flight_tools[0].invoke({})}
+
         tools += (
             policies_tools + flight_tools + hotel_tools + car_tools + activities_tools
         )
@@ -114,6 +118,9 @@ class Bootstrap:
             builder=builder,
             tools=tools,
             assistant=Assistant(runnable=runnable_with_tools),
+            extra_nodes={
+                "user_info": user_info,
+            },
         )
 
         templates = Jinja2Templates(directory="app/templates")

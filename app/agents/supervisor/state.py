@@ -7,3 +7,4 @@ from langgraph.graph.message import AnyMessage, add_messages
 
 class TravelerAgentState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
+    user_info: str

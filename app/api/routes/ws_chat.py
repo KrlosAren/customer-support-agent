@@ -15,7 +15,7 @@ async def websocket_endpoint(websocket: WebSocket):
     thread_id = "hola"
     config = {
         "configurable": {
-            "passenger_id": "3442 587242",
+            "passenger_id": "3952-666242",
             "thread_id": thread_id,
         }
     }
@@ -31,7 +31,7 @@ async def websocket_endpoint(websocket: WebSocket):
             logger.info(f"Received message: {data}")
 
             result = await agent.ainvoke(
-                {"input": data},
+                {"messages": data},
                 config=config,
             )
             logger.info(f"Agent result: {result}")

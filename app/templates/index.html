@@ -1,87 +1,170 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Agent Chat</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  >
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Agent Chat</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        max-width: 600px;
-        margin: 20px auto;
-      }
-      #chat {
-        border: 1px solid #ccc;
-        padding: 10px;
-        height: 400px;
-        overflow-y: scroll;
-      }
-      #inputArea {
-        display: flex;
-        margin-top: 10px;
-      }
-      #messageInput {
-        flex: 1;
-        padding: 10px;
-      }
-      #sendButton {
-        padding: 10px 20px;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>Chat con el Agente</h1>
-    <div id="chat"></div>
-    <div id="inputArea">
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    #chat {
+      background: #ffffff;
+      border: 1px solid #dee2e6;
+      border-radius: 5px;
+      padding: 10px;
+      height: 400px;
+      overflow-y: auto;
+    }
+    .message-user {
+      text-align: right;
+      color: #0d6efd;
+    }
+    .message-agent {
+      text-align: left;
+      color: #198754;
+    }
+    .timestamp {
+      font-size: 0.8em;
+      color: #6c757d;
+    }
+  </style>
+</head>
+<body>
+  <div class="container mt-4">
+    <h1 class="text-center mb-4">💬 Chat con el Agente</h1>
+    <div id="chat" class="mb-3"></div>
+    <div class="input-group">
       <input
         type="text"
         id="messageInput"
+        class="form-control"
         placeholder="Escribe un mensaje..."
-      />
-      <button id="sendButton">Enviar</button>
+      >
+      <button id="sendButton" class="btn btn-primary">Enviar</button>
     </div>
+  </div>
 
-    <script>
-      const chat = document.getElementById("chat");
-      const input = document.getElementById("messageInput");
-      const button = document.getElementById("sendButton");
+  <script>
+    const chat = document.getElementById("chat");
+    const input = document.getElementById("messageInput");
+    const button = document.getElementById("sendButton");
 
-      const ws = new WebSocket(`ws://${window.location.host}/chat/ws`);
-      function appendMarkdown(message) {
-        const div = document.createElement("div");
-        div.innerHTML = marked.parse(message);
-        chat.appendChild(div);
-        chat.scrollTop = chat.scrollHeight;
-      }
+    let ws;
+    let typingIndicator;
+
+    function connect() {
+      ws = new WebSocket(`ws://${window.location.host}/chat/ws`);
 
       ws.onopen = () => {
-        appendMessage("🟢 Conectado al servidor.");
-      };
-
-      ws.onmessage = (event) => {
-        // appendMessage("🤖 Agente: " + event.data);
-        appendMarkdown("🤖 Agente:" + event.data);
+        appendSystemMessage("🟢 Conectado al servidor.");
       };
 
       ws.onclose = () => {
-        appendMessage("🔴 Conexión cerrada.");
+        appendSystemMessage("🔴 Conexión cerrada.");
       };
 
-      button.addEventListener("click", () => {
-        const msg = input.value;
-        if (msg.trim() !== "") {
-          appendMessage("🧑 Tú: " + msg);
-          ws.send(msg);
-          input.value = "";
-        }
-      });
+      ws.onerror = (error) => {
+        appendSystemMessage(`⚠️ Error: ${error}`);
+      };
 
-      function appendMessage(message) {
-        const p = document.createElement("p");
-        p.textContent = message;
-        chat.appendChild(p);
-        chat.scrollTop = chat.scrollHeight;
+      ws.onmessage = (event) => {
+        removeTypingIndicator();
+        appendAgentMessage(event.data);
+      };
+    }
+
+    connect();
+
+    button.addEventListener("click", sendMessage);
+    input.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        sendMessage();
       }
-    </script>
-  </body>
+    });
+
+    function sendMessage() {
+      const msg = input.value.trim();
+      if (msg !== "") {
+        appendUserMessage(msg);
+        ws.send(msg);
+        input.value = "";
+        showTypingIndicator();
+      }
+    }
+
+    function appendUserMessage(message) {
+      const div = document.createElement("div");
+      div.className = "message-user mb-2";
+      div.innerHTML = `
+        <span>🧑 Tú:</span>
+        <span class="timestamp">[${getCurrentTime()}]</span><br>
+        <span>${escapeHtml(message)}</span>
+      `;
+      chat.appendChild(div);
+      scrollToBottom();
+    }
+
+    function appendAgentMessage(message) {
+      const div = document.createElement("div");
+      div.className = "message-agent mb-2";
+      div.innerHTML = `
+        <span>🤖 Agente:</span>
+        <span class="timestamp">[${getCurrentTime()}]</span><br>
+        <span>${marked.parse(message)}</span>
+      `;
+      chat.appendChild(div);
+      scrollToBottom();
+    }
+
+    function appendSystemMessage(message) {
+      const div = document.createElement("div");
+      div.className = "text-center text-muted mb-2";
+      div.textContent = message;
+      chat.appendChild(div);
+      scrollToBottom();
+    }
+
+    function showTypingIndicator() {
+      typingIndicator = document.createElement("div");
+      typingIndicator.className = "message-agent mb-2";
+      typingIndicator.innerHTML = `
+        <span>🤖 Agente:</span>
+        <span class="timestamp">[${getCurrentTime()}]</span><br>
+        <em>Escribiendo...</em>
+      `;
+      chat.appendChild(typingIndicator);
+      scrollToBottom();
+    }
+
+    function removeTypingIndicator() {
+      if (typingIndicator) {
+        chat.removeChild(typingIndicator);
+        typingIndicator = null;
+      }
+    }
+
+    function scrollToBottom() {
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function getCurrentTime() {
+      return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // Evitar XSS
+    function escapeHtml(unsafe) {
+      return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
 </html>
